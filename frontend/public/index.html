@@ -11,12 +11,45 @@
     />
    
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- <style>
+      .loading {
+        -webkit-animation: sk-scaleout 1s infinite ease-in-out;
+        animation: sk-scaleout 1s infinite ease-in-out;
+        background-color: #124c62;
+        border-radius: 100%;
+        height: 6em;
+        width: 6em;
+      }
+
+      .container {
+        align-items: center;
+        background-color: white;
+        display: flex;
+        height: 100vh;
+        justify-content: center;
+        width: 100vw;
+      }
+
+      @keyframes sk-scaleout {
+        0% {
+          -webkit-transform: scale(0);
+          transform: scale(0);
+        }
+        100% {
+          -webkit-transform: scale(1);
+          opacity: 0.5;
+          transform: scale(1);
+        }
+      }
+    </style> -->
    
     <title>ABC Pharmacy</title>
   </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+  <body style="margin: 0px">
+    <div id="spinner" class="container">
+      <div class="loading"></div>
+    </div>
     <div id="root"></div>
-   
   </body>
 </html>

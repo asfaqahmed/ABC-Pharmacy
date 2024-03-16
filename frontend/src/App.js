@@ -5,6 +5,7 @@ import CrudSection from './components/CrudSection';
 import Footer from './components/Footer';
 import './App.css';
 
+
 function App() {
   return (
     <div className="app">

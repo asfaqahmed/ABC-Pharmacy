@@ -2,13 +2,15 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
+	_ "github.com/lib/pq"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
 )
 
 const (
@@ -29,11 +31,11 @@ type Item struct {
 }
 
 type Product struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Quantity   int    `json:"quantity"`
-	UnitPrice  string `json:"unit_price"`
-	TotalPrice string `json:"total"`
+	ID         int     `json:"id"`
+	Name       string  `json:"name"`
+	Quantity   int     `json:"quantity"`
+	UnitPrice  float64 `json:"unit_price"`
+	TotalPrice float64 `json:"total"`
 }
 
 type Customer struct {
@@ -47,13 +49,13 @@ type Customer struct {
 
 type Invoice struct {
 	ID          int       `json:"id"`
-	Name        string    `json:"name"`
+	Name        string    `json:"customer_name"`
 	MobileNo    string    `json:"mobile_no"`
 	Email       string    `json:"email"`
 	Address     string    `json:"address"`
 	BillingType string    `json:"billing_type"`
 	Products    []Product `json:"products"`
-	TotalAmount string    `json:"total_amount"`
+	TotalAmount float64   `json:"total_amount"`
 }
 
 func main() {
@@ -90,7 +92,7 @@ func main() {
 	router.DELETE("/customers/:id", deleteCustomer)
 
 	// API routes for invoices
-	router.GET("/invoices", getInvoices)
+	router.GET("/invoices", getInvoice)
 	router.POST("/invoices", addInvoice)
 	router.PUT("/invoices/:id", updateInvoice)
 	router.DELETE("/invoices/:id", deleteInvoice)
@@ -252,9 +254,7 @@ func deleteCustomer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Customer deleted successfully"})
 }
 
-// CRUD operations for invoices
-
-func getInvoices(c *gin.Context) {
+func getInvoice(c *gin.Context) {
 	rows, err := db.Query("SELECT * FROM invoices")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -265,26 +265,17 @@ func getInvoices(c *gin.Context) {
 	var invoices []Invoice
 	for rows.Next() {
 		var invoice Invoice
-		var id int
-		var name, mobileNo, email, address, billingType string
-		if err := rows.Scan(&id, &name, &mobileNo, &email, &address, &billingType); err != nil {
+		var productsJSON string
+		if err := rows.Scan(&invoice.ID, &invoice.Name, &invoice.MobileNo, &invoice.Email, &invoice.Address, &invoice.BillingType, &productsJSON, &invoice.TotalAmount); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		invoice.ID = id
-		invoice.Name = name
-		invoice.MobileNo = mobileNo
-		invoice.Email = email
-		invoice.Address = address
-		invoice.BillingType = billingType
 
-		// Fetch products for the invoice
-		products, err := getProductsForInvoice(id)
-		if err != nil {
+		// Deserialize productsJSON into the Products slice of Invoice
+		if err := json.Unmarshal([]byte(productsJSON), &invoice.Products); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		invoice.Products = products
 
 		invoices = append(invoices, invoice)
 	}
@@ -293,27 +284,19 @@ func getInvoices(c *gin.Context) {
 }
 
 func addInvoice(c *gin.Context) {
+
 	var newInvoice Invoice
 	if err := c.ShouldBindJSON(&newInvoice); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Insert invoice
-	var id int
-	err := db.QueryRow("INSERT INTO invoices (name, mobile_no, email, address, billing_type) VALUES ($1, $2, $3, $4, $5) RETURNING id", newInvoice.Name, newInvoice.MobileNo, newInvoice.Email, newInvoice.Address, newInvoice.BillingType).Scan(&id)
+	var productsJSON string
+	_, err := db.Exec("INSERT INTO invoices (customer_name, mobile_no, email, address, billing_type, products, total_amount) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+		newInvoice.Name, newInvoice.MobileNo, newInvoice.Email, newInvoice.Address, newInvoice.BillingType, productsJSON, newInvoice.TotalAmount)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	// Insert products for the invoice
-	for _, product := range newInvoice.Products {
-		_, err := db.Exec("INSERT INTO invoice_products (invoice_id, name, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)", id, product.Name, product.Quantity, product.UnitPrice, product.Total)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Invoice created successfully"})
@@ -328,20 +311,12 @@ func updateInvoice(c *gin.Context) {
 		return
 	}
 
-	// Update invoice
-	_, err := db.Exec("UPDATE invoices SET name=$1, mobile_no=$2, email=$3, address=$4, billing_type=$5 WHERE id=$6", updatedInvoice.Name, updatedInvoice.MobileNo, updatedInvoice.Email, updatedInvoice.Address, updatedInvoice.BillingType, id)
+	var productsJSON string
+	_, err := db.Exec("UPDATE invoices SET customer_name=$1, mobile_no=$2, email=$3, address=$4, billing_type=$5, products=$6, total_amount=$7 WHERE id=$8",
+		updatedInvoice.Name, updatedInvoice.MobileNo, updatedInvoice.Email, updatedInvoice.Address, updatedInvoice.BillingType, productsJSON, updatedInvoice.TotalAmount, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	// Update products for the invoice
-	for _, product := range updatedInvoice.Products {
-		_, err := db.Exec("UPDATE invoice_products SET name=$1, quantity=$2, unit_price=$3, total=$4 WHERE invoice_id=$5 AND id=$6", product.Name, product.Quantity, product.UnitPrice, product.Total, id, product.ID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Invoice updated successfully"})
@@ -350,38 +325,12 @@ func updateInvoice(c *gin.Context) {
 func deleteInvoice(c *gin.Context) {
 	id := c.Param("id")
 
-	// Delete products for the invoice
-	_, err := db.Exec("DELETE FROM invoice_products WHERE invoice_id=$1", id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
 	// Delete invoice
-	_, err = db.Exec("DELETE FROM invoices WHERE id=$1", id)
+	_, err := db.Exec("DELETE FROM invoices WHERE id=$1", id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Invoice deleted successfully"})
-}
-
-func getProductsForInvoice(invoiceID int) ([]Product, error) {
-	rows, err := db.Query("SELECT * FROM invoice_products WHERE invoice_id=$1", invoiceID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var products []Product
-	for rows.Next() {
-		var product Product
-		if err := rows.Scan(&product.ID, &product.Name, &product.Quantity, &product.UnitPrice, &product.Total); err != nil {
-			return nil, err
-		}
-		products = append(products, product)
-	}
-
-	return products, nil
 }
