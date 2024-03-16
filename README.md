@@ -1,4 +1,4 @@
-ABC Pharmacy Management System is a web-based application designed to manage invoices and product inventory for a pharmacy. It is an assesment given to me from [21c Care (https://www.21ccare.com/)]. This system allows users to create, view, edit, and delete invoices, as well as manage product details associated with each invoice.
+ABC Pharmacy Management System is a web-based application designed to manage invoices and product inventory for a pharmacy. It is an assesment given to me from 21c Care (https://www.21ccare.com/). This system allows users to create, view, edit, and delete invoices, as well as manage product details associated with each invoice.
 
 ##Running the System
 ##Frontend
@@ -17,6 +17,8 @@ ABC Pharmacy Management System is a web-based application designed to manage inv
 3. Start the backend server using go run main.go.
 4. The server will start running at http://localhost:8080.
 
+## Sample Image of Backend API
+![ABC_Pharmacy](https://github.com/asfaqahmed/ABC-Pharmacy/blob/main/images/Screenshot%20(4).png)
 
 Usage
 1. Creating Invoices
