@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// while send the code empty the values
 const (
 	host     = "localhost"
 	port     = 5432
@@ -22,13 +23,6 @@ const (
 )
 
 var db *sql.DB
-
-type Item struct {
-	ID           int     `json:"id"`
-	Name         string  `json:"name"`
-	UnitPrice    float64 `json:"unit_price"`
-	ItemCategory string  `json:"item_category"`
-}
 
 type Product struct {
 	ID         int     `json:"id"`
@@ -71,7 +65,6 @@ func main() {
 	}
 
 	// Use error logging middleware
-	router.Use(errorLogger())
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"http://localhost:3000"} // Add your React app's origin
@@ -79,20 +72,23 @@ func main() {
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
 	router.Use(cors.New(config))
 
-	// API routes for items
-	router.GET("/items", getItems)
-	router.POST("/items", addItem)
-	router.PUT("/items/:id", updateItem)
-	router.DELETE("/items/:id", deleteItem)
-
 	// API routes for customers
 	router.GET("/customers", getCustomers)
+	router.GET("/customers/:id", getSingleCustomer)
 	router.POST("/customers", addCustomer)
 	router.PUT("/customers/:id", updateCustomer)
 	router.DELETE("/customers/:id", deleteCustomer)
 
+	// API routes for products
+	router.GET("/products", getProducts)
+	router.GET("/products/:id", getSingleProduct)
+	router.POST("/products", addProduct)
+	router.PUT("/products/:id", updateProduct)
+	router.DELETE("/products/:id", deleteProduct)
+
 	// API routes for invoices
 	router.GET("/invoices", getInvoice)
+	router.GET("/invoices/:id", getSingleInvoice)
 	router.POST("/invoices", addInvoice)
 	router.PUT("/invoices/:id", updateInvoice)
 	router.DELETE("/invoices/:id", deleteInvoice)
@@ -101,91 +97,7 @@ func main() {
 	router.Run(":8080")
 }
 
-func errorLogger() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Next handler
-		c.Next()
-
-		// Check if any errors occurred during handling
-		if len(c.Errors) > 0 {
-			// Log errors
-			log.Println(c.Errors.String())
-		}
-	}
-}
-
-// CRUD operations for items
-
-func getItems(c *gin.Context) {
-	rows, err := db.Query("SELECT * FROM items")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	defer rows.Close()
-
-	var items []Item
-	for rows.Next() {
-		var item Item
-		err := rows.Scan(&item.ID, &item.Name, &item.UnitPrice, &item.ItemCategory)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		items = append(items, item)
-	}
-
-	c.JSON(http.StatusOK, items)
-}
-
-func addItem(c *gin.Context) {
-	var newItem Item
-	if err := c.ShouldBindJSON(&newItem); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	_, err := db.Exec("INSERT INTO items (name, unit_price, item_category) VALUES ($1, $2, $3)", newItem.Name, newItem.UnitPrice, newItem.ItemCategory)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "Item added successfully"})
-}
-
-func updateItem(c *gin.Context) {
-	id := c.Param("id")
-
-	var updatedItem Item
-	if err := c.ShouldBindJSON(&updatedItem); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	_, err := db.Exec("UPDATE items SET name=$1, unit_price=$2, item_category=$3 WHERE id=$4", updatedItem.Name, updatedItem.UnitPrice, updatedItem.ItemCategory, id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Item updated successfully"})
-}
-
-func deleteItem(c *gin.Context) {
-	id := c.Param("id")
-
-	_, err := db.Exec("DELETE FROM items WHERE id=$1", id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Item deleted successfully"})
-}
-
 // CRUD operations for customers
-
 func getCustomers(c *gin.Context) {
 	rows, err := db.Query("SELECT * FROM customers")
 	if err != nil {
@@ -197,7 +109,7 @@ func getCustomers(c *gin.Context) {
 	var customers []Customer
 	for rows.Next() {
 		var customer Customer
-		err := rows.Scan(&customer.ID, &customer.Name, &customer.MobileNo, &customer.Email, &customer.Address)
+		err := rows.Scan(&customer.ID, &customer.Name, &customer.MobileNo, &customer.Email, &customer.Address, &customer.BillingType)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -206,6 +118,22 @@ func getCustomers(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, customers)
+}
+
+func getSingleCustomer(c *gin.Context) {
+	customerID := c.Param("id")
+
+	row := db.QueryRow("SELECT * FROM customers WHERE id = $1", customerID)
+
+	var customer Customer
+	err := row.Scan(&customer.ID, &customer.Name, &customer.MobileNo, &customer.Email, &customer.Address, customer.BillingType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the invoice as JSON response
+	c.JSON(http.StatusOK, customer)
 }
 
 func addCustomer(c *gin.Context) {
@@ -254,6 +182,92 @@ func deleteCustomer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Customer deleted successfully"})
 }
 
+// CRUD operations for products
+func getProducts(c *gin.Context) {
+	rows, err := db.Query("SELECT * FROM products")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var products []Product
+	for rows.Next() {
+		var product Product
+		err := rows.Scan(&product.ID, &product.Name, &product.Quantity, &product.UnitPrice, &product.TotalPrice)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		products = append(products, product)
+	}
+
+	c.JSON(http.StatusOK, products)
+}
+
+func getSingleProduct(c *gin.Context) {
+	productID := c.Param("id")
+
+	row := db.QueryRow("SELECT * FROM products WHERE id = $1", productID)
+
+	var product Product
+	err := row.Scan(&product.ID, &product.Name, &product.Quantity, &product.UnitPrice, &product.TotalPrice)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the invoice as JSON response
+	c.JSON(http.StatusOK, product)
+}
+
+func addProduct(c *gin.Context) {
+	var newProduct Product
+	if err := c.ShouldBindJSON(&newProduct); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err := db.Exec("INSERT INTO products (name, quantity, unit_price, total_price) VALUES ($1, $2, $3, $4)", newProduct.Name, newProduct.Quantity, newProduct.UnitPrice, newProduct.TotalPrice)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Product added successfully"})
+}
+
+func updateProduct(c *gin.Context) {
+	id := c.Param("id")
+
+	var updatedProduct Product
+	if err := c.ShouldBindJSON(&updatedProduct); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err := db.Exec("UPDATE products SET name=$1, quantity=$2, unit_price=$3, total_price=$4 WHERE id=$5", updatedProduct.Name, updatedProduct.Quantity, updatedProduct.UnitPrice, updatedProduct.TotalPrice, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product updated successfully"})
+}
+
+func deleteProduct(c *gin.Context) {
+	id := c.Param("id")
+
+	_, err := db.Exec("DELETE FROM products WHERE id=$1", id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
+}
+
+// CRUD operations for invoices
 func getInvoice(c *gin.Context) {
 	rows, err := db.Query("SELECT * FROM invoices")
 	if err != nil {
@@ -283,16 +297,44 @@ func getInvoice(c *gin.Context) {
 	c.JSON(http.StatusOK, invoices)
 }
 
-func addInvoice(c *gin.Context) {
+func getSingleInvoice(c *gin.Context) {
+	invoiceID := c.Param("id")
 
+	row := db.QueryRow("SELECT * FROM invoices WHERE id = $1", invoiceID)
+
+	var invoice Invoice
+	var productsJSON string
+
+	err := row.Scan(&invoice.ID, &invoice.Name, &invoice.MobileNo, &invoice.Email, &invoice.Address, &invoice.BillingType, &productsJSON, &invoice.TotalAmount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Deserialize productsJSON into the Products slice of Invoice
+	if err := json.Unmarshal([]byte(productsJSON), &invoice.Products); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the invoice as JSON response
+	c.JSON(http.StatusOK, invoice)
+}
+
+func addInvoice(c *gin.Context) {
 	var newInvoice Invoice
 	if err := c.ShouldBindJSON(&newInvoice); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var productsJSON string
-	_, err := db.Exec("INSERT INTO invoices (customer_name, mobile_no, email, address, billing_type, products, total_amount) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+	productsJSON, err := json.Marshal(newInvoice.Products)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to serialize products"})
+		return
+	}
+
+	_, err = db.Exec("INSERT INTO invoices (customer_name, mobile_no, email, address, billing_type, products, total_amount) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 		newInvoice.Name, newInvoice.MobileNo, newInvoice.Email, newInvoice.Address, newInvoice.BillingType, productsJSON, newInvoice.TotalAmount)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -311,8 +353,13 @@ func updateInvoice(c *gin.Context) {
 		return
 	}
 
-	var productsJSON string
-	_, err := db.Exec("UPDATE invoices SET customer_name=$1, mobile_no=$2, email=$3, address=$4, billing_type=$5, products=$6, total_amount=$7 WHERE id=$8",
+	productsJSON, err := json.Marshal(updatedInvoice.Products)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to serialize products"})
+		return
+	}
+
+	_, err = db.Exec("UPDATE invoices SET customer_name=$1, mobile_no=$2, email=$3, address=$4, billing_type=$5, products=$6, total_amount=$7 WHERE id=$8",
 		updatedInvoice.Name, updatedInvoice.MobileNo, updatedInvoice.Email, updatedInvoice.Address, updatedInvoice.BillingType, productsJSON, updatedInvoice.TotalAmount, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

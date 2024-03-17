@@ -5,13 +5,23 @@ const InvoiceSection = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [editedProducts, setEditedProducts] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProduct, setEditedProduct] = useState({});
+  const [saveMessage, setSaveMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     fetchInvoices();
   }, []);
 
-  const handleSearch = (query) => {
-    fetchInvoices(query);
+  const handleSearch = () => {
+    if (!searchQuery || !invoices) {
+      return invoices;
+    } else {
+      return invoices.filter(invoice =>
+        invoice.customer_name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
   };
 
   const fetchInvoices = (query) => {
@@ -21,30 +31,47 @@ const InvoiceSection = () => {
     }
     fetch(url)
       .then(response => response.json())
-      .then(data => setInvoices(data))
-      .catch(error => console.error('Error fetching invoices:', error));
+      .then(data => {
+        setInvoices(data);
+        console.log('Fetched invoices:', data); // Log fetched invoices
+      })
+      .catch(error => {
+        console.error('Error fetching invoices:', error);
+        setErrorMessage('Error fetching invoices. Please try again later.'); // Set error message
+      });
   };
 
   const editProduct = (invoice) => {
     setSelectedInvoice(invoice);
     fetchInvoiceProducts(invoice.id);
-    // Open modal or navigate to editing page
   };
 
   const fetchInvoiceProducts = (invoiceId) => {
     fetch(`http://localhost:8080/invoices/${invoiceId}`)
       .then(response => response.json())
-      .then(data => setEditedProducts(data.products))
-      .catch(error => console.error('Error fetching products:', error));
+      .then(data => {
+        setEditedProducts(data.products);
+        console.log('Fetched invoice products:', data.products); // Log fetched invoice products
+      })
+      .catch(error => {
+        console.error('Error fetching products:', error);
+        setErrorMessage('Error fetching products. Please try again later.'); // Set error message
+      });
   };
 
   const saveEditedProducts = () => {
+    if (editedProducts.length === 0) {
+      console.log('No changes to save');
+      return;
+    }
+    
     fetch(`http://localhost:8080/invoices/${selectedInvoice.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ products: editedProducts })
+      
     })
     .then(response => {
       if (response.ok) {
@@ -54,7 +81,25 @@ const InvoiceSection = () => {
         throw new Error('Failed to update products');
       }
     })
-    .catch(error => console.error('Error updating products:', error));
+    .then(() => {
+      setSaveMessage('Products updated successfully');
+    })
+    .catch(error => {
+      console.error('Error updating products:', error);
+      setErrorMessage('Error updating products. Please try again later.'); // Set error message
+    });
+  };
+
+  const handleProductChange = (index, newValue) => {
+    setEditedProducts(prevProducts => {
+      const updatedProducts = [...prevProducts];
+      updatedProducts[index] = newValue;
+      return updatedProducts;
+    });
+  };
+
+  const handleEditChange = (propertyName, value) => {
+    setEditedProduct({ ...editedProduct, [propertyName]: value });
   };
 
   const deleteProduct = (invoiceId) => {
@@ -70,109 +115,109 @@ const InvoiceSection = () => {
           throw new Error('Failed to delete invoice');
         }
       })
-      .catch(error => console.error('Error deleting invoice:', error));
+      .catch(error => {
+        console.error('Error deleting invoice:', error);
+        setErrorMessage('Error deleting invoice. Please try again later.'); // Set error message
+      });
     }
   };
 
-  const handleProductChange = (index, newValue) => {
-    setEditedProducts(prevProducts => {
-      const updatedProducts = [...prevProducts];
-      updatedProducts[index] = newValue;
-      return updatedProducts;
-    });
-  };
-
   return (
-    <section id="invoice-section">
-      <h2>Pharmacy Invoice</h2>
-      <div id="search-bar">
+    <section>
+      <div className="search-bar" id="search-bar">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Enter search query..."
         />
-        <button onClick={() => handleSearch(searchQuery)}>Search</button>
+        <button className="bl-button" onClick={handleSearch}>Search</button>
       </div>
-
       <div>
+        {errorMessage && <p>Error: {errorMessage}</p>} {/* Display error message */}
+        {saveMessage && <p>{saveMessage}</p>}
         <h2>Edit Invoice #{selectedInvoice ? selectedInvoice.id : ''}</h2>
         <ul>
           {editedProducts.map((product, index) => (
             <li key={index}>
-              {/* Render input fields for editing each product */}
+              <label>Name :</label>
               <input
                 type="text"
                 value={product.name}
                 onChange={(e) => handleProductChange(index, { ...product, name: e.target.value })}
               />
-                <input
-                  type="number"
-                  value={product.total}
-                  onChange={(e) => handleProductChange(index, { ...product, total: parseFloat(e.target.value) })}
-                />
 
+              <label>Quantity :</label>
               <input
                 type="number"
                 value={product.quantity}
                 onChange={(e) => handleProductChange(index, { ...product, quantity: parseFloat(e.target.value) })}
               />
 
-            <input
-              type="number"
-              value={product.unit_price}
-              onChange={(e) => handleProductChange(index, { ...product, unit_price: parseFloat(e.target.value) })}
-            />
+              <label>Unit Price :</label>
+              <input
+                type="number"
+                value={product.unit_price}
+                onChange={(e) => handleProductChange(index, { ...product, unit_price: parseFloat(e.target.value) })}
+              />
 
-
-              {/* Add other input fields for editing other product properties */}
+              <label>Total :</label>
+              <input
+                type="number"
+                value={product.total}
+                onChange={(e) => handleProductChange(index, { ...product, total: parseFloat(e.target.value) })}
+              />
             </li>
           ))}
         </ul>
         <button onClick={saveEditedProducts}>Save Changes</button>
       </div>
 
+      
       {invoices.map(invoice => (
-        <div key={invoice.id}>
-          <div id="customer-info">
-            <h3>Customer Information</h3>
-            <p><strong>Name:</strong> {invoice.customer_name}</p>
-            <p><strong>Email:</strong> {invoice.email}</p>
-            <p><strong>Address:</strong> {invoice.address}</p>
-          </div>
-          <div id="product-details">
-            <h3>Product Details</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Quantity</th>
-                  <th>Price per Unit</th>
-                  <th>Total</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.products.map(product => (
-                  <tr key={product.id}>
-                    <td>{product.name}</td>
-                    <td>{product.quantity}</td>
-                    <td>{product.unit_price}</td>
-                    <td>{product.total}</td>
-                    <td>
-                      <button onClick={() => editProduct(invoice)}>Edit</button>
-                      <button onClick={() => deleteProduct(invoice.id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div id="total-amount">
-            <p><strong>Total Amount:</strong> {invoice.total_amount}</p>
-          </div>
-        </div>
-      ))}
+  <div key={invoice.id}>
+    <div id="customer-info">
+      <h3>Customer Information</h3>
+      <p><strong>Name:</strong> {invoice.customer_name || "John Doe"}</p>
+      <p><strong>Email:</strong> {invoice.email || "John@example.com"}</p>
+      <p><strong>Address:</strong> {invoice.address || "123 Main St, City"}</p>
+    </div>
+    
+    <div id="product-details">
+      <h3>Product Details</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Price per Unit</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {invoice.products.map(product => (
+            <tr key={product.id}>
+              <td>{product.name}</td>
+              <td>{product.quantity}</td>
+              <td>{product.unit_price}</td>
+              <td>{product.total}</td>
+              <td>
+                <button className="bl-button" onClick={() => editProduct(invoice)}>Edit</button>
+                <button className="bl-button" onClick={() => deleteProduct(invoice.id)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    
+    <div id="total-amount">
+      <p><strong>Total Amount:</strong> {invoice.products.reduce((total, product) => total + product.total, 0)}</p>
+    </div>
+  </div>
+))}
+
     </section>
   );
 }

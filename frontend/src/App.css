@@ -45,28 +45,68 @@ nav a:hover {
 }
 
 logo {
-  display: flex;
-  align-items: center;
+  text-align: center;
 }
 
 .logo img {
-  width: 40px;
+  width: 45px;
   height: auto;
   margin-right: 10px;
 }
 
-.logo-img-new{
-margin-top: 6px;
-}
-
 .logo span {
-  font-weight: bold;
-  font-size: 20px;
-  font-family: 'Arial', sans-serif;
+  display: inline-block;
+    vertical-align: middle; /* Vertically align the inline-block elements */
+    margin-right: 10px;
 }
 
 section {
   padding: 20px;
+}
+
+.bl-button, .bl1-button{
+  background-color: #007bff; 
+  color: white; 
+  border: none; 
+  padding: 10px 20px;
+  cursor: pointer; 
+  border-radius: 5px; 
+  margin-right: 10px;
+}
+
+.bl1-button{
+  margin-bottom: 8px;
+}
+
+.search-button:hover {
+  background-color: #0056b3; /* Darker blue background color */
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+}
+
+.search-bar input {
+  padding: 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+.search-bar button {
+  padding: 8px 16px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.search-bar button:hover {
+  background-color: #0056b3;
 }
 
 footer {
@@ -112,6 +152,27 @@ th {
 #product-details td:last-child {
   text-align: center;
 }
+
+.product-item {
+  margin-bottom: 20px;
+}
+
+.input-group {
+  margin-bottom: 10px;
+}
+
+.input-group label {
+  display: inline-block;
+  width: 100px;
+}
+
+.input-group input {
+  width: 200px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
 
 #crud-section {
   background-color: #ecf0f1;

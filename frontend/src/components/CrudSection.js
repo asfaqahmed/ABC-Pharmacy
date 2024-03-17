@@ -3,26 +3,24 @@ import { useState } from 'react';
 
 const CrudSection = () => {
   const [productName, setProductName] = useState('');
-  const [price, setPrice] = useState('');
-  const [itemCategory, setItemCategory] = useState('');
+  const [productQuantity, setProductQuantity] = useState('');
+  const [unitPrice, setUnitPrice] = useState('');
+  const [totalPrice, setTotalPrice] = useState('');
 
   const [customerName, setCustomerName] = useState('');
   const [mobileNo, setMobileNo] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [billingType, setBillingType] = useState('');
-  
 
   const addProduct = () => {
-    // Your addProduct logic here
-    const apiUrl = 'http://localhost:8080/items';
-
-    const priceFloat = parseFloat(price);
+    const apiUrl = 'http://localhost:8080/products';
 
     const payload = {
       name: productName,
-      unit_price: priceFloat,
-      item_category : itemCategory
+      quantity: productQuantity,
+      unit_price: unitPrice,
+      total: totalPrice,
     };
 
     fetch(apiUrl, {
@@ -41,6 +39,7 @@ const CrudSection = () => {
       console.error('Error adding product:', error);
     });
 };
+
   const addCustomer = () => {
     const apiUrl = 'http://localhost:8080/customers';
 
@@ -63,22 +62,20 @@ const CrudSection = () => {
     .then(response => response.json())
     .then(data => {
       console.log('Product added successfully:', data);
-      // Add any additional logic or state updates as needed
     })
     .catch(error => {
       console.error('Error adding product:', error);
     });
   };
 
-  return (
-
-<section id="crud-section">
+return (
+  <section id="crud-section">
       <div className="crud-container">
         <div className="crud-section">
           <h2>Manage Products</h2>
           <form id="product-form">
             {/* Product form fields */}
-            <label htmlFor="productName">Product Name:</label>
+        <label htmlFor="productName">Product Name:</label>
         <input
           type="text"
           id="productName"
@@ -88,35 +85,47 @@ const CrudSection = () => {
           required
         />
 
-      <label htmlFor="price">Price per Unit:</label>
-        <input
-          type="number"
-          id="price"
-          name="price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-        />
-
-        <label htmlFor="itemCategory">itemCategory:</label>
+      <label htmlFor="productQuantity">Product Quantity:</label>
         <input
           type="text"
-          id="itemCategory"
-          name="itemCategory"
-          value={itemCategory}
-          onChange={(e) => setItemCategory(e.target.value)}
+          id="productQuantity"
+          name="productQuantity"
+          value={productQuantity}
+          onChange={(e) => setProductQuantity(e.target.value)}
           required
         />
-            <button type="button" onClick={addProduct}>
-              Add Product
-            </button>
-          </form>
-        </div>
+
+      <label htmlFor="unitPrice">Unit Price:</label>
+        <input
+          type="number"
+          id="unitPrice"
+          name="unitPrice"
+          value={unitPrice}
+          onChange={(e) => setUnitPrice(e.target.value)}
+          required
+        />
+
+      <label htmlFor="totalPrice">Total Price:</label>
+        <input
+          type="number"
+          id="totalPrice"
+          name="totalPrice"
+          value={totalPrice}
+          onChange={(e) => setTotalPrice(e.target.value)}
+          required
+        />
+
+        
+      <button type="button" onClick={addProduct}>
+        Add Product
+      </button>
+    </form>
+  </div>
 
     {/* Customer  fields */}
-        <div className="crud-section">
-          <h2>Manage Customers</h2>
-          <form id="customer-form">
+  <div className="crud-section">
+    <h2>Manage Customers</h2>
+    <form id="customer-form">
       <label htmlFor="CustomerForm">Customer Name:</label>
         <input
           type="text"
@@ -166,15 +175,15 @@ const CrudSection = () => {
           onChange={(e) => setBillingType(e.target.value)}
           required
         />
+      <button type="button" onClick={addCustomer}>
+        Add Customer
+      </button>
+    </form>
 
-            <button type="button" onClick={addCustomer}>
-              Add Customer
-            </button>
-          </form>
-          <section></section>
-        </div>
-      </div>
-    </section>
+    <section></section>
+  </div>
+</div>
+</section>
 
   );
 }

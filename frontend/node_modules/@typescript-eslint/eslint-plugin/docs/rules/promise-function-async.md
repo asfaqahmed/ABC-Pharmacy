@@ -1,29 +1,18 @@
----
-description: 'Require any function or method that returns a Promise to be marked async.'
----
+# Requires any function or method that returns a Promise to be marked async (`promise-function-async`)
 
-> 🛑 This file is source code, not the primary documentation location! 🛑
->
-> See **https://typescript-eslint.io/rules/promise-function-async** for documentation.
-
+Requires any function or method that returns a Promise to be marked async.
 Ensures that each function is only capable of:
 
 - returning a rejected promise, or
 - throwing an Error object.
 
-In contrast, non-`async`, `Promise`-returning functions are technically capable of either.
+In contrast, non-`async` `Promise` - returning functions are technically capable of either.
 Code that handles the results of those functions will often need to handle both cases, which can get complex.
 This rule's practice removes a requirement for creating code to handle both cases.
 
-> When functions return unions of `Promise` and non-`Promise` types implicitly, it is usually a mistake—this rule flags those cases. If it is intentional, make the return type explicitly to allow the rule to pass.
+## Rule Details
 
-## Examples
-
-Examples of code for this rule
-
-<!--tabs-->
-
-### ❌ Incorrect
+Examples of **incorrect** code for this rule
 
 ```ts
 const arrowFunctionReturnsPromise = () => Promise.resolve('value');
@@ -31,13 +20,9 @@ const arrowFunctionReturnsPromise = () => Promise.resolve('value');
 function functionReturnsPromise() {
   return Promise.resolve('value');
 }
-
-function functionReturnsUnionWithPromiseImplicitly(p: boolean) {
-  return p ? 'value' : Promise.resolve('value');
-}
 ```
 
-### ✅ Correct
+Examples of **correct** code for this rule
 
 ```ts
 const arrowFunctionReturnsPromise = async () => Promise.resolve('value');
@@ -45,15 +30,37 @@ const arrowFunctionReturnsPromise = async () => Promise.resolve('value');
 async function functionReturnsPromise() {
   return Promise.resolve('value');
 }
+```
 
-// An explicit return type that is not Promise means this function cannot be made async, so it is ignored by the rule
-function functionReturnsUnionWithPromiseExplicitly(
-  p: boolean,
-): string | Promise<string> {
-  return p ? 'value' : Promise.resolve('value');
-}
+## Options
 
-async function functionReturnsUnionWithPromiseImplicitly(p: boolean) {
-  return p ? 'value' : Promise.resolve('value');
+Options may be provided as an object with:
+
+- `allowAny` to indicate that `any` or `unknown` shouldn't be considered Promises (`true` by default).
+- `allowedPromiseNames` to indicate any extra names of classes or interfaces to be considered Promises when returned.
+
+In addition, each of the following properties may be provided, and default to `true`:
+
+- `checkArrowFunctions`
+- `checkFunctionDeclarations`
+- `checkFunctionExpressions`
+- `checkMethodDeclarations`
+
+```json
+{
+  "@typescript-eslint/promise-function-async": [
+    "error",
+    {
+      "allowedPromiseNames": ["Thenable"],
+      "checkArrowFunctions": true,
+      "checkFunctionDeclarations": true,
+      "checkFunctionExpressions": true,
+      "checkMethodDeclarations": true
+    }
+  ]
 }
 ```
+
+## Related To
+
+- TSLint: [promise-function-async](https://palantir.github.io/tslint/rules/promise-function-async)

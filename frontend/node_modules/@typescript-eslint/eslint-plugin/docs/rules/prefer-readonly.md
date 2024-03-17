@@ -1,21 +1,13 @@
----
-description: "Require private members to be marked as `readonly` if they're never modified outside of the constructor."
----
+# Requires that private members are marked as `readonly` if they're never modified outside of the constructor (`prefer-readonly`)
 
-> 🛑 This file is source code, not the primary documentation location! 🛑
->
-> See **https://typescript-eslint.io/rules/prefer-readonly** for documentation.
+This rule enforces that private members are marked as `readonly` if they're never modified outside of the constructor.
+
+## Rule Details
 
 Member variables with the privacy `private` are never permitted to be modified outside of their declaring class.
 If that class never modifies their value, they may safely be marked as `readonly`.
 
-This rule reports on private members are marked as `readonly` if they're never modified outside of the constructor.
-
-## Examples
-
-<!--tabs-->
-
-### ❌ Incorrect
+Examples of **incorrect** code for this rule:
 
 ```ts
 class Container {
@@ -33,7 +25,7 @@ class Container {
 }
 ```
 
-### ✅ Correct
+Examples of **correct** code for this rule:
 
 ```ts
 class Container {
@@ -54,6 +46,8 @@ class Container {
 
 ## Options
 
+This rule, in its default state, does not require any argument.
+
 ### `onlyInlineLambdas`
 
 You may pass `"onlyInlineLambdas": true` as a rule option within an object to restrict checking only to members immediately assigned a lambda value.
@@ -64,11 +58,15 @@ You may pass `"onlyInlineLambdas": true` as a rule option within an object to re
 }
 ```
 
-Example of code for the `{ "onlyInlineLambdas": true }` options:
+Example of **correct** code for the `{ "onlyInlineLambdas": true }` options:
 
-<!--tabs-->
+```ts
+class Container {
+  private neverModifiedPrivate = 'unchanged';
+}
+```
 
-#### ❌ Incorrect
+Example of **incorrect** code for the `{ "onlyInlineLambdas": true }` options:
 
 ```ts
 class Container {
@@ -78,10 +76,6 @@ class Container {
 }
 ```
 
-#### ✅ Correct
+## Related to
 
-```ts
-class Container {
-  private neverModifiedPrivate = 'unchanged';
-}
-```
+- TSLint: ['prefer-readonly'](https://palantir.github.io/tslint/rules/prefer-readonly)
