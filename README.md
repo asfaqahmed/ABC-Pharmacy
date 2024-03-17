@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS invoices (
 
 ## Sample Image of Backend API
 ![ABC_Pharmacy Rest Api Call](https://github.com/asfaqahmed/ABC-Pharmacy/blob/main/images/Screenshot%20(4).png)
-![ABC_Pharmacy Front Page](https://github.com/asfaqahmed/ABC-Pharmacy/blob/main/images/Screenshot%20(4).png)
+![ABC_Pharmacy Front Page](https://github.com/asfaqahmed/ABC-Pharmacy/blob/main/images/Screenshot%20(5).png)
 
 
 Usage
